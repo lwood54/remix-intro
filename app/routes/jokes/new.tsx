@@ -57,8 +57,8 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   const fieldErrors = {
-    name: validateFieldLength(nameLength, 3, 10),
-    content: validateFieldLength(contentLength, 10, 20),
+    name: validateFieldLength(nameLength, 3, 15),
+    content: validateFieldLength(contentLength, 10, 100),
   };
 
   const fields = { name, content };
