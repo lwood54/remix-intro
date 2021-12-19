@@ -1,5 +1,22 @@
-import { ActionFunction, json, redirect, useActionData } from "remix";
+import {
+  ActionFunction,
+  json,
+  Link,
+  LoaderFunction,
+  redirect,
+  useActionData,
+  useCatch,
+} from "remix";
 import { db } from "~/utils/db.server";
+import { getUserId, requireUserId } from "~/utils/session.server";
+
+export const loader: LoaderFunction = async ({ request }) => {
+  const userId = await getUserId(request);
+  if (!userId) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+  return {};
+};
 
 function validateFieldLength(
   fieldLength: number,
@@ -26,6 +43,7 @@ type ActionData = {
 const badRequest = (data: ActionData) => json(data, { status: 400 });
 
 export const action: ActionFunction = async ({ request }) => {
+  const userId = await requireUserId(request);
   const form = await request.formData();
   const name = form.get("name");
   const nameLength = `${name}`.length;
@@ -49,7 +67,10 @@ export const action: ActionFunction = async ({ request }) => {
     return badRequest({ fieldErrors, fields });
   }
 
-  const joke = await db.joke.create({ data: fields });
+  const joke = await db.joke.create({
+    data: { ...fields, jokesterId: userId },
+  });
+
   return redirect(`/jokes/${joke.id}`);
 };
 
@@ -99,5 +120,26 @@ export default function NewJokeRoute() {
         </form>
       </div>
     </>
+  );
+}
+
+export function CatchBoundary() {
+  const caught = useCatch();
+
+  if (caught.status === 401) {
+    return (
+      <div className="error-container">
+        <p>You must be logged in to create a joke.</p>
+        <Link to="/login">Login</Link>
+      </div>
+    );
+  }
+}
+
+export function ErrorBoundary() {
+  return (
+    <div className="error-container">
+      Something unexpected went wrong. Sorry about that.
+    </div>
   );
 }
