@@ -1,4 +1,22 @@
-export default function NewJokesRoute() {
+import { ActionFunction, redirect, useLoaderData } from "remix";
+import { db } from "~/utils/db.server";
+
+export const action: ActionFunction = async ({ request }) => {
+  const form = await request.formData();
+  const name = form.get("name");
+  const content = form.get("content");
+
+  if (typeof name !== "string" || typeof content !== "string") {
+    throw new Error(`form fields should be strings`);
+  }
+
+  const fields = { name, content };
+
+  const joke = await db.joke.create({ data: fields });
+  return redirect(`/jokes/${joke.id}`);
+};
+
+export default function NewJokeRoute() {
   return (
     <div>
       <form method="post">
